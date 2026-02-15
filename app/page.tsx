@@ -98,7 +98,7 @@ print(response.json())`}</code></pre>
         <div className={styles.ctas}>
           <a
             className={styles.primary}
-            href="https://github.com/yourusername/ninja-api-forge"
+            href="https://github.com/RayhanRamadhani/ninja-api-forge-hackathon/"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -106,7 +106,7 @@ print(response.json())`}</code></pre>
           </a>
           <a
             className={styles.secondary}
-            href="https://github.com/yourusername/ninja-api-forge"
+            href="https://github.com/RayhanRamadhani/"
             target="_blank"
             rel="noopener noreferrer"
           >
