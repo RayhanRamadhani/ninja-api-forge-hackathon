@@ -88,6 +88,29 @@ function generateMockMarketData(): MarketSummary[] {
   });
 }
 
+// Generate mock orderbook data for development/testing
+function generateMockOrderbook(): Orderbook {
+  const basePrice = 100 + Math.random() * 100; // Random base price 100-200
+  
+  // Generate 10 bid levels (prices below base)
+  const bids: [string, string][] = Array.from({ length: 10 }, (_, i) => {
+    const priceOffset = (i + 1) * (basePrice * 0.001); // 0.1% steps
+    const price = (basePrice - priceOffset).toFixed(6);
+    const quantity = (Math.random() * 1000 + 100).toFixed(2);
+    return [price, quantity];
+  });
+  
+  // Generate 10 ask levels (prices above base)
+  const asks: [string, string][] = Array.from({ length: 10 }, (_, i) => {
+    const priceOffset = (i + 1) * (basePrice * 0.001); // 0.1% steps
+    const price = (basePrice + priceOffset).toFixed(6);
+    const quantity = (Math.random() * 1000 + 100).toFixed(2);
+    return [price, quantity];
+  });
+  
+  return { bids, asks };
+}
+
 export async function fetchOrderbook(marketId: string): Promise<Orderbook> {
   const cacheKey = `orderbook:${marketId}`;
   
@@ -101,13 +124,19 @@ export async function fetchOrderbook(marketId: string): Promise<Orderbook> {
     });
     
     if (!res.ok) {
+      // If API fails, check if it's a mock market ID and return mock orderbook
+      const mockMarkets = generateMockMarketData();
+      const isMockMarketId = mockMarkets.some(m => m.marketId.toLowerCase() === marketId.toLowerCase());
+      
+      if (isMockMarketId) {
+        console.log(`Using mock orderbook for ${marketId.substring(0, 10)}...`);
+        return generateMockOrderbook();
+      }
+      
       throw new Error(`Failed to fetch orderbook: ${res.status} ${res.statusText}`);
     }
     
     const data = await res.json();
-    
-    // Debug: log structure to understand API response
-    console.log('Orderbook API Response:', JSON.stringify(data, null, 2));
     
     // Parse buys and sells from Injective API response
     const buys = data.buys_price_level || data.buys || [];
@@ -124,13 +153,23 @@ export async function fetchOrderbook(marketId: string): Promise<Orderbook> {
       level.quantity || level.q || '0'
     ]);
     
-    console.log(`Parsed ${bids.length} bids, ${asks.length} asks`);
-    
     const orderbook = { bids, asks };
     setCache(cacheKey, orderbook);
     return orderbook;
   } catch (error) {
     console.error('Error fetching orderbook:', error);
+    
+    // Check if it's a mock market ID and provide fallback
+    const mockMarkets = generateMockMarketData();
+    const isMockMarketId = mockMarkets.some(m => m.marketId.toLowerCase() === marketId.toLowerCase());
+    
+    if (isMockMarketId) {
+      console.log(`Using mock orderbook for development`);
+      const mockOrderbook = generateMockOrderbook();
+      setCache(cacheKey, mockOrderbook);
+      return mockOrderbook;
+    }
+    
     throw new Error(`Unable to fetch orderbook for ${marketId}`);
   }
 }
@@ -156,7 +195,6 @@ export async function fetchMarketsSummary(): Promise<MarketSummary[]> {
     // Try each endpoint until one works
     for (const endpoint of endpoints) {
       try {
-        console.log(`Trying endpoint: ${endpoint}`);
         const res = await fetch(endpoint, {
           headers: { 'Content-Type': 'application/json' },
         });
@@ -164,13 +202,9 @@ export async function fetchMarketsSummary(): Promise<MarketSummary[]> {
         if (res.ok) {
           data = await res.json();
           successEndpoint = endpoint;
-          console.log(`Success with: ${endpoint}`);
           break;
-        } else {
-          console.log(`Failed with status ${res.status}: ${endpoint}`);
         }
       } catch (err) {
-        console.log(`Error with ${endpoint}:`, err);
         continue;
       }
     }
@@ -179,20 +213,11 @@ export async function fetchMarketsSummary(): Promise<MarketSummary[]> {
       throw new Error('All Injective API endpoints failed');
     }
     
-    // Debug: log response structure
-    console.log('API Response keys:', Object.keys(data));
-    
     // Try different possible data structures
     const markets = data.markets || data.data || [];
     
-    // Debug: log first market structure
-    if (markets.length > 0) {
-      console.log('Sample market data:', JSON.stringify(markets[0], null, 2));
-    }
-    
     if (markets.length === 0) {
-      console.warn('No markets found in response, generating mock data');
-      // Return mock data for development
+      console.warn('No markets found, using mock data');
       return generateMockMarketData();
     }
     
@@ -253,11 +278,6 @@ export async function fetchMarketsSummary(): Promise<MarketSummary[]> {
         low24h: isNaN(low24h) ? 0 : low24h,
       };
     });
-    
-    console.log(`Transformed ${transformed.length} markets from ${successEndpoint}`);
-    if (transformed.length > 0) {
-      console.log('Sample transformed:', transformed[0]);
-    }
     
     setCache(cacheKey, transformed);
     return transformed;

@@ -2,6 +2,12 @@
 
 A Next.js API service that provides real-time market insights and analytics for Injective Protocol spot markets. Built with TypeScript, featuring intelligent caching and comprehensive data validation.
 
+**🚀 Live API:** [https://ninja-api-forge-hackathon.vercel.app](https://ninja-api-forge-hackathon.vercel.app)
+
+**🧪 Try it now:**
+- [Top Movers API](https://ninja-api-forge-hackathon.vercel.app/api/top-movers)
+- [Market Insight API](https://ninja-api-forge-hackathon.vercel.app/api/markets/0x2be72879bb90ec8cbbd7510d0eed6a727f6c2690ce7f1397982453d552f9fe8f/insight)
+
 ## 🎯 What This API Does
 
 Ninja API Forge connects to the Injective Protocol blockchain to provide:
@@ -108,22 +114,30 @@ Returns the top 5 gaining and top 5 losing markets based on 24-hour price change
 
 ## 🚀 Usage Examples
 
+**Base URL (Production):** `https://ninja-api-forge-hackathon.vercel.app`
+
 ### cURL
 
 ```bash
 # Get market insight for a specific market
-curl http://localhost:3000/api/markets/0x2be72879bb90ec8cbbd7510d0eed6a727f6c2690ce7f1397982453d552f9fe8f/insight
+curl https://ninja-api-forge-hackathon.vercel.app/api/markets/0x2be72879bb90ec8cbbd7510d0eed6a727f6c2690ce7f1397982453d552f9fe8f/insight
 
 # Get top movers
+curl https://ninja-api-forge-hackathon.vercel.app/api/top-movers
+
+# Local development
 curl http://localhost:3000/api/top-movers
 ```
 
 ### JavaScript/Fetch
 
 ```javascript
+// Production API
+const API_BASE = 'https://ninja-api-forge-hackathon.vercel.app';
+
 // Market insight
 const getMarketInsight = async (symbol) => {
-  const response = await fetch(`/api/markets/${symbol}/insight`);
+  const response = await fetch(`${API_BASE}/api/markets/${symbol}/insight`);
   const data = await response.json();
   console.log(`Spread: ${data.spread}%`);
   console.log(`Buy Pressure: ${data.buyPressure}%`);
@@ -131,7 +145,7 @@ const getMarketInsight = async (symbol) => {
 
 // Top movers
 const getTopMovers = async () => {
-  const response = await fetch('/api/top-movers');
+  const response = await fetch(`${API_BASE}/api/top-movers`);
   const { topGainers, topLosers } = await response.json();
   console.log('Best performer:', topGainers[0].symbol);
 };
@@ -142,15 +156,17 @@ const getTopMovers = async () => {
 ```python
 import requests
 
+API_BASE = 'https://ninja-api-forge-hackathon.vercel.app'
+
 # Market insight
 response = requests.get(
-    'http://localhost:3000/api/markets/INJ-USDT/insight'
+    f'{API_BASE}/api/markets/INJ-USDT/insight'
 )
 data = response.json()
 print(f"Spread: {data['spread']}%")
 
 # Top movers
-response = requests.get('http://localhost:3000/api/top-movers')
+response = requests.get(f'{API_BASE}/api/top-movers')
 data = response.json()
 for gainer in data['topGainers']:
     print(f"{gainer['symbol']}: +{gainer['change24h']}%")
@@ -213,6 +229,18 @@ Create a `.env.local` file (optional):
 ---
 
 ## 📦 Deployment
+
+### ✅ Currently Deployed
+
+**Live Production API:** [https://ninja-api-forge-hackathon.vercel.app](https://ninja-api-forge-hackathon.vercel.app)
+
+Hosted on Vercel with automatic deployments from the `master` branch.
+
+**Available Endpoints:**
+- 🔍 Market Insight: `GET /api/markets/:symbol/insight`
+- 📊 Top Movers: `GET /api/top-movers`
+
+---
 
 ### Deploy to Vercel (Recommended)
 

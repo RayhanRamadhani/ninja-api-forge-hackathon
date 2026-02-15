@@ -14,18 +14,11 @@ export function calcSpread(orderbook: Orderbook): number {
     throw new Error('No asks available in orderbook');
   }
 
-  // Debug logging
-  console.log('First bid:', orderbook.bids[0]);
-  console.log('First ask:', orderbook.asks[0]);
-
   const bestBidPrice = orderbook.bids[0][0];
   const bestAskPrice = orderbook.asks[0][0];
   
   const bestBid = parseFloat(bestBidPrice);
   const bestAsk = parseFloat(bestAskPrice);
-  
-  // Debug parsed values
-  console.log(`Parsed bestBid: ${bestBid}, bestAsk: ${bestAsk}`);
   
   // Validate parsed values
   if (isNaN(bestBid) || isNaN(bestAsk) || bestAsk === 0) {
