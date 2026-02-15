@@ -10,14 +10,14 @@ A Next.js API service that provides real-time market insights and analytics for 
 
 ## 🎯 What This API Does
 
-Ninja API Forge connects to the Injective Protocol blockchain to provide:
+Ninja API Forge connects directly to Injective Protocol's Exchange API to provide:
 
-- **Market Insights**: Real-time orderbook analysis from live Injective data, including spread calculations and buy/sell pressure metrics
-- **Top Movers**: Track the best and worst performing markets over 24 hours (attempts multiple API endpoints, with mock fallback for development)
+- **Market Insights**: Real-time orderbook analysis using `/exchange/v1/orderbook/{market_id}`, including spread calculations and buy/sell pressure metrics
+- **Top Movers**: Track the best and worst performing markets over 24 hours using `/exchange/v1/markets` (with automatic fallback to alternative endpoints)
 - **Smart Caching**: Multi-layer caching system to optimize performance and reduce external API calls by 90%
 - **Type Safety**: Full TypeScript implementation with comprehensive error handling and data validation
 - **Input Validation**: Automatic sanitization and validation to prevent XSS and injection attacks
-- **High Availability**: Multiple API endpoint fallbacks for resilient production deployment
+- **High Availability**: Multiple API endpoint fallbacks (3+ endpoints) for resilient production deployment
 
 Perfect for trading dashboards, market analysis tools, or DeFi applications that need reliable Injective market data.
 
@@ -29,7 +29,7 @@ Perfect for trading dashboards, market analysis tools, or DeFi applications that
 
 **Endpoint:** `GET /api/markets/:symbol/insight`
 
-Analyzes a specific market's **live orderbook** from Injective Protocol to calculate spread and buying/selling pressure in real-time.
+Analyzes a specific market's **live orderbook** from Injective Protocol using `/exchange/v1/orderbook/{market_id}` to calculate spread and buying/selling pressure in real-time.
 
 **Parameters:**
 - `symbol` (required) - Market identifier (can be market ID or ticker symbol)
@@ -65,7 +65,7 @@ Analyzes a specific market's **live orderbook** from Injective Protocol to calcu
 
 Returns the top 5 gaining and top 5 losing markets based on 24-hour price changes.
 
-**Data Source:** Attempts to fetch from Injective API endpoints (tries 3 different endpoints). If all endpoints fail, returns realistic mock data for development/testing purposes.
+**Data Source:** Fetches from Injective API `/exchange/v1/markets` endpoint (with automatic fallback to 2 alternative endpoints). If all endpoints fail, returns realistic mock data for development/testing purposes.
 
 **Parameters:** None
 
@@ -219,10 +219,17 @@ Create a `.env.local` file (optional):
 # No environment variables required for basic usage
 # The API uses public Injective endpoints by default
 
-# Optional: Override API endpoints
+# Default values (can be overridden):
 # INJ_INDEXER_API=https://api.injective.network
 # INJ_INDEXER_BASE=https://sentry.lcd.injective.network
 ```
+
+**Default Endpoints:**
+- **Primary API**: `https://api.injective.network`
+  - `/exchange/v1/markets` - Markets list
+  - `/exchange/v1/orderbook/{market_id}` - Live orderbook
+- **Fallback API**: `https://sentry.lcd.injective.network`
+  - `/injective/exchange/v1beta1/spot/markets` - Alternative markets endpoint
 
 **Note:** In development mode, if Injective API endpoints are unavailable, the API automatically falls back to mock data to ensure uninterrupted testing.
 
@@ -384,6 +391,41 @@ The API implements a **dual-layer caching strategy** with intelligent fallbacks:
 
 ---
 
+## 🌐 Data Sources & API Integration
+
+This API fetches real-time data from Injective Protocol using the following endpoints:
+
+### Injective Protocol API Endpoints
+
+**Base URLs:**
+- Primary: `https://api.injective.network`
+- Fallback: `https://sentry.lcd.injective.network`
+
+**Endpoints Used:**
+
+| Endpoint | Purpose | Returns | Used By |
+|----------|---------|---------|---------|
+| `/exchange/v1/markets` | Get all available markets | `symbol` + `market_id` list | Top Movers API |
+| `/exchange/v1/markets/{market_id}/summary` | Market statistics | `lastPrice`, `volume24h`, `change24h`, `high24h`, `low24h` | (Reserved for future use) |
+| `/exchange/v1/orderbook/{market_id}` | Live orderbook data | `bids`, `asks` for spread/pressure/liquidity | Market Insight API |
+
+**Fallback Strategy:**
+
+The API implements intelligent fallback mechanisms:
+
+1. **Primary Endpoint**: `https://api.injective.network/exchange/v1/markets`
+2. **Fallback 1**: `https://sentry.lcd.injective.network/injective/exchange/v1beta1/spot/markets`
+3. **Fallback 2**: `https://api.injective.network/api/chronos/v1/spot/markets`
+4. **Final Fallback**: Mock data (development/testing only)
+
+**Reliability Features:**
+- Automatic endpoint switching on failure
+- Response validation before caching
+- Graceful degradation to mock data
+- Detailed error logging for debugging
+
+---
+
 ## 🔒 Error Handling
 
 All endpoints include comprehensive error handling with detailed error messages:
@@ -448,7 +490,10 @@ npx tsc --noEmit
 - **Framework**: [Next.js 15](https://nextjs.org/) (App Router with async params)
 - **Language**: [TypeScript](https://www.typescriptlang.org/) (Strict mode enabled)
 - **Blockchain**: [Injective Protocol](https://injective.com/)
-- **API**: Injective REST API & Indexer API with fallback mechanisms
+- **Data Source**: Injective Exchange API (`/exchange/v1/*` endpoints)
+  - Markets List: `/exchange/v1/markets`
+  - Orderbook: `/exchange/v1/orderbook/{market_id}`
+  - Multiple endpoint fallbacks for high availability
 - **Caching**: In-memory + Next.js ISR (Incremental Static Regeneration)
 - **Deployment**: Vercel (recommended) or any Node.js host
 

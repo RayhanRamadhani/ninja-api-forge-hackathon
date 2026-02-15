@@ -119,7 +119,8 @@ export async function fetchOrderbook(marketId: string): Promise<Orderbook> {
   if (cached) return cached;
   
   try {
-    const res = await fetch(`${INJ_INDEXER_BASE}/injective/exchange/v1beta1/spot/orderbook/${marketId}`, {
+    // Try primary endpoint
+    const res = await fetch(`${INJ_INDEXER_API}/exchange/v1/orderbook/${marketId}`, {
       headers: { 'Content-Type': 'application/json' },
     });
     
@@ -184,9 +185,9 @@ export async function fetchMarketsSummary(): Promise<MarketSummary[]> {
   try {
     // Try multiple Injective API endpoints
     const endpoints = [
+      `${INJ_INDEXER_API}/exchange/v1/markets`,
+      `${INJ_INDEXER_BASE}/injective/exchange/v1beta1/spot/markets`,
       `${INJ_INDEXER_API}/api/chronos/v1/spot/markets`,
-      `${INJ_INDEXER_API}/api/explorer/v1/spot/markets`,
-      `https://k8s.mainnet.lcd.injective.network/injective/exchange/v1beta1/spot/markets`,
     ];
     
     let data: any = null;
